@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Совместные заметки</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        :root {
+            --primary: #6A5ACD;
+            --primary-dark: #5A4AB5;
+            --secondary: #FF7F50;
+            --background: #f9f9ff;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-light: #666666;
+            --text-lighter: #999999;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #F44336;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 0 15px;
+            margin: 0 auto;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 20px 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-header h1 i {
+            font-size: 1.8rem;
+        }
+
+        .section-title {
+            margin: 25px 0 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Notes list */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .note-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 150px;
+            position: relative;
+        }
+
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .note-card-content {
+            padding: 15px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .note-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .note-preview {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            flex-grow: 1;
+        }
+
+        .note-date {
+            font-size: 0.75rem;
+            color: var(--text-lighter);
+            margin-top: 5px;
+        }
+
+        .note-collaborators {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+        }
+
+        .collaborator-avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            margin-left: -5px;
+            border: 2px solid white;
+        }
+
+        /* Editor screen */
+        .editor-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background);
+            z-index: 1000;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        .editor-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 101;
+        }
+
+        .editor-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .editor-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .editor-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .editor-content {
+            padding: 20px 15px;
+        }
+
+        .note-title-input {
+            width: 100%;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: none;
+            outline: none;
+            background: transparent;
+            margin-bottom: 20px;
+            color: var(--text);
+            padding: 10px 0;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .note-editor {
+            min-height: 300px;
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            line-height: 1.6;
+            background: transparent;
+            resize: none;
+            color: var(--text);
+        }
+
+        .formatting-toolbar {
+            display: flex;
+            background: var(--card-bg);
+            border-radius: 50px;
+            padding: 8px 15px;
+            box-shadow: 0 2px 8px var(--shadow);
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99;
+            gap: 8px;
+        }
+
+        .format-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .format-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            z-index: 99;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-btn i {
+            font-size: 1.4rem;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+        }
+
+        .add-btn {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(106, 90, 205, 0.3);
+            cursor: pointer;
+            z-index: 98;
+            font-size: 1.8rem;
+            border: none;
+        }
+
+        /* Settings modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(106, 90, 205, 0.1);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .setting-info {
+            flex-grow: 1;
+        }
+
+        .setting-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .setting-desc {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .setting-action {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .collaborators-list {
+            margin-top: 15px;
+        }
+
+        .collaborator-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .collaborator-avatar-lg {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-right: 15px;
+            font-weight: 600;
+        }
+
+        .collaborator-name {
+            font-weight: 500;
+        }
+
+        .collaborator-email {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* Share modal */
+        .share-link {
+            background: var(--background);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .share-link-text {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 10px;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--border);
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+
+        /* Background options */
+        .background-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .bg-option {
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .bg-option.selected {
+            border-color: var(--primary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .notes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            }
+            
+            .formatting-toolbar {
+                gap: 5px;
+                padding: 6px 10px;
+                bottom: 85px;
+            }
+            
+            .format-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main screen -->
+    <div class="app-header">
+        <div class="container">
+            <h1><i class="fas fa-notes-medical"></i> Совместные заметки</h1>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-sticky-note"></i> Ваши заметки</h2>
+        
+        <div class="notes-grid" id="notesGrid">
+            <!-- Notes will be populated here -->
+        </div>
+        
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-clipboard-list"></i>
+            <h3>Нет заметок</h3>
+            <p>Создайте свою первую заметку</p>
+        </div>
+    </div>
+    
+    <button class="add-btn" id="addNoteBtn">
+        <i class="fas fa-plus"></i>
+    </button>
+    
+    <div class="bottom-nav">
+        <a href="#" class="nav-btn active">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="#" class="nav-btn">
+            <i class="fas fa-share-alt"></i>
+            <span>Доступ</span>
+        </a>
+        <a href="#" class="nav-btn" id="settingsBtn">
+            <i class="fas fa-cog"></i>
+            <span>Настройки</span>
+        </a>
+        <a href="#" class="nav-btn">
+            <i class="fas fa-user"></i>
+            <span>Профиль</span>
+        </a>
+    </div>
+    
+    <!-- Editor screen -->
+    <div class="editor-container" id="editorScreen">
+        <div class="editor-header">
+            <button class="editor-btn" id="backBtn">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 id="editorTitle">Новая заметка</h2>
+            <div class="editor-actions">
+                <button class="editor-btn" id="shareBtn">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="editor-btn" id="settingsEditorBtn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="editor-content">
+            <input type="text" class="note-title-input" id="noteTitleInput" placeholder="Название заметки">
+            <div class="note-editor" id="noteEditor" contenteditable="true" placeholder="Начните писать здесь..."></div>
+        </div>
+        
+        <div class="formatting-toolbar">
+            <button class="format-btn" data-command="bold" title="Жирный">
+                <i class="fas fa-bold"></i>
+            </button>
+            <button class="format-btn" data-command="italic" title="Курсив">
+                <i class="fas fa-italic"></i>
+            </button>
+            <button class="format-btn" data-command="insertUnorderedList" title="Список">
+                <i class="fas fa-list-ul"></i>
+            </button>
+            <button class="format-btn" id="fontSizeBtn" title="Размер текста">
+                <i class="fas fa-text-height"></i>
+            </button>
+            <button class="format-btn" id="bgColorBtn" title="Фон">
+                <i class="fas fa-palette"></i>
+            </button>
+            <button class="format-btn" id="addImageBtn" title="Добавить фото">
+                <i class="fas fa-image"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Settings modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Настройки заметки</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <div class="setting-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="setting-info">
+                        <div class="setting-title">Доступ</div>
+                        <div class="setting-desc">Управление участниками</div>
+                    </div>
+                    <div class="setting-action" id="manageAccessBtn">Изменить</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="setting-info">
+                        <div class="setting-title">Фон</div>
+                        <div class="setting-desc">Изменить фон заметки</div>
+                    </div>
+                    <div class="setting-action" id="changeBgBtn">Выбрать</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="setting-info">
+                        <div class="setting-title">История изменений</div>
+                        <div class="setting-desc">Просмотр истории</div>
+                    </div>
+                    <div class="setting-action">Открыть</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="setting-info">
+                        <div class="setting-title">Информация</div>
+                        <div class="setting-desc">Дата создания и изменения</div>
+                    </div>
+                    <div class="setting-action">Подробнее</div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-icon" style="background-color: rgba(244, 67, 54, 0.1); color: var(--danger);">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    <div class="setting-info">
+                        <div class="setting-title">Удалить заметку</div>
+                        <div class="setting-desc">Безвозвратно удалить заметку</div>
+                    </div>
+                    <div class="setting-action" style="color: var(--danger);">Удалить</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Access management modal -->
+    <div class="modal" id="accessModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Управление доступом</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-link">
+                    <div class="share-link-text" id="shareLink">https://t.me/sharednotes/app?note=abcd1234</div>
+                    <button class="copy-btn" id="copyLinkBtn">Копировать</button>
+                </div>
+                
+                <h4>Участники (3)</h4>
+                <div class="collaborators-list">
+                    <div class="collaborator-item">
+                        <div class="collaborator-avatar-lg">ИИ</div>
+                        <div class="setting-info">
+                            <div class="collaborator-name">Иван Иванов</div>
+                            <div class="collaborator-email">you@example.com</div>
+                        </div>
+                    </div>
+                    <div class="collaborator-item">
+                        <div class="collaborator-avatar-lg">ПП</div>
+                        <div class="setting-info">
+                            <div class="collaborator-name">Петр Петров</div>
+                            <div class="collaborator-email">friend@example.com</div>
+                        </div>
+                    </div>
+                    <div class="collaborator-item">
+                        <div class="collaborator-avatar-lg">АС</div>
+                        <div class="setting-info">
+                            <div class="collaborator-name">Анна Сидорова</div>
+                            <div class="collaborator-email">colleague@example.com</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="copy-btn" style="width: 100%; margin-top: 20px; padding: 12px;">
+                    <i class="fas fa-user-plus"></i> Добавить участника
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Background selection modal -->
+    <div class="modal" id="backgroundModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-palette"></i> Выбор фона</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Цвета</h4>
+                <div class="background-options">
+                    <div class="bg-option selected" style="background-color: #ffffff;" data-bg="#ffffff"></div>
+                    <div class="bg-option" style="background-color: #f9f9ff;" data-bg="#f9f9ff"></div>
+                    <div class="bg-option" style="background-color: #fff8e1;" data-bg="#fff8e1"></div>
+                    <div class="bg-option" style="background-color: #e3f2fd;" data-bg="#e3f2fd"></div>
+                    <div class="bg-option" style="background-color: #e8f5e9;" data-bg="#e8f5e9"></div>
+                    <div class="bg-option" style="background-color: #fce4ec;" data-bg="#fce4ec"></div>
+                    <div class="bg-option" style="background-color: #f3e5f5;" data-bg="#f3e5f5"></div>
+                    <div class="bg-option" style="background-color: #e0f7fa;" data-bg="#e0f7fa"></div>
+                </div>
+                
+                <h4 style="margin-top: 20px;">Градиенты</h4>
+                <div class="background-options">
+                    <div class="bg-option" style="background: linear-gradient(135deg, #a1c4fd, #c2e9fb);" data-bg="linear-gradient(135deg, #a1c4fd, #c2e9fb)"></div>
+                    <div class="bg-option" style="background: linear-gradient(135deg, #fbc2eb, #a6c1ee);" data-bg="linear-gradient(135deg, #fbc2eb, #a6c1ee)"></div>
+                    <div class="bg-option" style="background: linear-gradient(135deg, #84fab0, #8fd3f4);" data-bg="linear-gradient(135deg, #84fab0, #8fd3f4)"></div>
+                    <div class="bg-option" style="background: linear-gradient(135deg, #d4fc79, #96e6a1);" data-bg="linear-gradient(135deg, #d4fc79, #96e6a1)"></div>
+                </div>
+                
+                <h4 style="margin-top: 20px;">Изображения</h4>
+                <div class="background-options">
+                    <div class="bg-option" style="background: url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60') center/cover;" data-bg="url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60')"></div>
+                    <div class="bg-option" style="background: url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60') center/cover;" data-bg="url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60')"></div>
+                    <div class="bg-option" style="background: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60') center/cover;" data-bg="url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60')"></div>
+                    <div class="bg-option" style="background: url('https://images.unsplash.com/photo-1542362567-b07e54358753?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60') center/cover;" data-bg="url('https://images.unsplash.com/photo-1542362567-b07e54358753?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60')"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample notes data
+        const sampleNotes = [
+            {
+                id: 1,
+                title: "Покупки",
+                content: "Молоко<br>Хлеб<br>Яйца<br>Фрукты",
+                date: "2023-07-15",
+                collaborators: 2,
+                background: "#e8f5e9"
+            },
+            {
+                id: 2,
+                title: "План проекта",
+                content: "1. Анализ требований<br>2. Дизайн интерфейса<br>3. Разработка<br>4. Тестирование",
+                date: "2023-07-10",
+                collaborators: 3,
+                background: "#e3f2fd"
+            },
+            {
+                id: 3,
+                title: "Идеи для отпуска",
+                content: "Горный поход<br>Пляжный отдых<br>Экскурсии по городам<br>Велосипедные прогулки",
+                date: "2023-07-05",
+                collaborators: 1,
+                background: "#fff8e1"
+            },
+            {
+                id: 4,
+                title: "Книги для прочтения",
+                content: "1. Преступление и наказание<br>2. Мастер и Маргарита<br>3. 1984<br>4. Три товарища",
+                date: "2023-06-28",
+                collaborators: 0,
+                background: "#fce4ec"
+            }
+        ];
+        
+        // DOM Elements
+        const notesGrid = document.getElementById('notesGrid');
+        const emptyState = document.getElementById('emptyState');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const editorScreen = document.getElementById('editorScreen');
+        const backBtn = document.getElementById('backBtn');
+        const editorTitle = document.getElementById('editorTitle');
+        const noteTitleInput = document.getElementById('noteTitleInput');
+        const noteEditor = document.getElementById('noteEditor');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsEditorBtn = document.getElementById('settingsEditorBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const accessModal = document.getElementById('accessModal');
+        const backgroundModal = document.getElementById('backgroundModal');
+        const modalCloseBtns = document.querySelectorAll('.modal-close');
+        const manageAccessBtn = document.getElementById('manageAccessBtn');
+        const changeBgBtn = document.getElementById('changeBgBtn');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const formatBtns = document.querySelectorAll('.format-btn');
+        const bgOptions = document.querySelectorAll('.bg-option');
+        
+        // Initialize app
+        function initApp() {
+            renderNotes();
+            setupEventListeners();
+            
+            // Hide empty state if notes exist
+            emptyState.style.display = sampleNotes.length ? 'none' : 'block';
+        }
+        
+        // Render notes to the grid
+        function renderNotes() {
+            notesGrid.innerHTML = '';
+            
+            sampleNotes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-card';
+                noteElement.style.background = note.background;
+                noteElement.innerHTML = `
+                    <div class="note-card-content">
+                        <div class="note-title">${note.title}</div>
+                        <div class="note-preview">${note.content}</div>
+                        <div class="note-date">${formatDate(note.date)}</div>
+                        ${note.collaborators > 0 ? `
+                            <div class="note-collaborators">
+                                <div class="collaborator-avatar">+${note.collaborators}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                noteElement.addEventListener('click', () => openEditor(note));
+                notesGrid.appendChild(noteElement);
+            });
+        }
+        
+        // Format date for display
+        function formatDate(dateString) {
+            const options = { day: 'numeric', month: 'short' };
+            return new Date(dateString).toLocaleDateString('ru-RU', options);
+        }
+        
+        // Open editor with note
+        function openEditor(note) {
+            editorTitle.textContent = note.title || 'Новая заметка';
+            noteTitleInput.value = note.title || '';
+            noteEditor.innerHTML = note.content || '';
+            editorScreen.style.display = 'block';
+            
+            // Set background if exists
+            if (note.background) {
+                editorScreen.style.background = note.background;
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Add new note
+            addNoteBtn.addEventListener('click', () => {
+                openEditor({});
+            });
+            
+            // Back to main screen
+            backBtn.addEventListener('click', () => {
+                editorScreen.style.display = 'none';
+            });
+            
+            // Open settings modal
+            settingsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                settingsModal.style.display = 'flex';
+            });
+            
+            // Open editor settings
+            settingsEditorBtn.addEventListener('click', () => {
+                settingsModal.style.display = 'flex';
+            });
+            
+            // Close modals
+            modalCloseBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    settingsModal.style.display = 'none';
+                    accessModal.style.display = 'none';
+                    backgroundModal.style.display = 'none';
+                });
+            });
+            
+            // Manage access
+            manageAccessBtn.addEventListener('click', () => {
+                settingsModal.style.display = 'none';
+                accessModal.style.display = 'flex';
+            });
+            
+            // Change background
+            changeBgBtn.addEventListener('click', () => {
+                settingsModal.style.display = 'none';
+                backgroundModal.style.display = 'flex';
+            });
+            
+            // Copy share link
+            copyLinkBtn.addEventListener('click', () => {
+                const link = document.getElementById('shareLink').textContent;
+                navigator.clipboard.writeText(link).then(() => {
+                    copyLinkBtn.textContent = 'Скопировано!';
+                    setTimeout(() => {
+                        copyLinkBtn.textContent = 'Копировать';
+                    }, 2000);
+                });
+            });
+            
+            // Share note
+            shareBtn.addEventListener('click', () => {
+                accessModal.style.display = 'flex';
+            });
+            
+            // Formatting toolbar
+            formatBtns.forEach(btn => {
+                if (btn.dataset.command) {
+                    btn.addEventListener('click', () => {
+                        document.execCommand(btn.dataset.command, false, null);
+                        btn.classList.toggle('active');
+                    });
+                }
+            });
+            
+            // Background selection
+            bgOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove selected class from all
+                    bgOptions.forEach(opt => opt.classList.remove('selected'));
+                    // Add to clicked
+                    option.classList.add('selected');
+                    
+                    // Apply background
+                    const bg = option.dataset.bg;
+                    editorScreen.style.background = bg;
+                    
+                    // Close modal after 1s
+                    setTimeout(() => {
+                        backgroundModal.style.display = 'none';
+                    }, 1000);
+                });
+            });
+            
+            // Click outside modal to close
+            window.addEventListener('click', (e) => {
+                if (e.target === settingsModal) settingsModal.style.display = 'none';
+                if (e.target === accessModal) accessModal.style.display = 'none';
+                if (e.target === backgroundModal) backgroundModal.style.display = 'none';
+            });
+        }
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
